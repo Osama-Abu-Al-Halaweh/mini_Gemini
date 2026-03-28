@@ -1,9 +1,9 @@
+import os
 from flask import Flask, request, jsonify, render_template
 from google import genai
-
 app = Flask(__name__)
 
-client = genai.Client(api_key="AIzaSyAPVmG4AgpTsxB6IGIOmWArM1p1FMyu2Jc")
+client = genai.Client(api_key=os.getenv("API_KEY"))
 
 @app.route("/")
 def home():
