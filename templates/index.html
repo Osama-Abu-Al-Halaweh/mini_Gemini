@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Gemini UI</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: #0b0f19;
+    color: white;
+    display: flex;
+}
+
+.sidebar {
+    width: 260px;
+    background: #111827;
+    padding: 15px;
+    border-right: 1px solid #1f2937;
+    display: flex;
+    flex-direction: column;
+}
+
+.new-chat {
+    background: #2563eb;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chat-item {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.chat-item:hover {
+    background: #1f2937;
+}
+
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.center-screen {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.logo {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.chat-box {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+}
+
+.message {
+    margin: 10px 0;
+    max-width: 70%;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+.user {
+    background: #2563eb;
+    align-self: flex-end;
+}
+
+.bot {
+    background: #1f2937;
+    align-self: flex-start;
+}
+
+.input-area {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid #1f2937;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: #111827;
+    color: white;
+}
+
+button.send {
+    margin-left: 10px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <button class="new-chat" onclick="newChat()">+ New Chat</button>
+    <div class="chat-list" id="chatList"></div>
+</div>
+
+<div class="main">
+
+    <div class="center-screen" id="welcome">
+        <div class="logo">✨ Gemini</div>
+        <div>ابدأ محادثة جديدة</div>
+    </div>
+
+    <div class="chat-box" id="chatBox"></div>
+
+    <div class="input-area">
+        <input id="messageInput" placeholder="اكتب رسالتك...">
+        <button class="send" onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
+
+<script>
+let chats = [];
+let currentChat = [];
+
+function renderChat() {
+    const box = document.getElementById("chatBox");
+    const welcome = document.getElementById("welcome");
+
+    if (currentChat.length === 0) {
+        box.style.display = "none";
+        welcome.style.display = "flex";
+        return;
+    }
+
+    welcome.style.display = "none";
+    box.style.display = "flex";
+    box.innerHTML = "";
+
+    currentChat.forEach(msg => {
+        const div = document.createElement("div");
+        div.classList.add("message", msg.role);
+        div.innerText = msg.text;
+        box.appendChild(div);
+    });
+
+    box.scrollTop = box.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+    if (!text) return;
+
+    currentChat.push({ role: "user", text });
+    renderChat();
+
+    fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+    })
+    .then(res => res.json())
+    .then(data => {
+        currentChat.push({ role: "bot", text: data.reply });
+        renderChat();
+    });
+
+    input.value = "";
+}
+
+document.getElementById("messageInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") sendMessage();
+});
+
+function newChat() {
+    if (currentChat.length > 0) {
+        chats.push([...currentChat]);
+        updateSidebar();
+    }
+    currentChat = [];
+    renderChat();
+}
+
+function updateSidebar() {
+    const list = document.getElementById("chatList");
+    list.innerHTML = "";
+
+    chats.forEach((chat, index) => {
+        const div = document.createElement("div");
+        div.classList.add("chat-item");
+        div.innerText = "Chat " + (index + 1);
+        div.onclick = () => {
+            currentChat = [...chat];
+            renderChat();
+        };
+        list.appendChild(div);
+    });
+}
+</script>
+
+</body>
+</html>
